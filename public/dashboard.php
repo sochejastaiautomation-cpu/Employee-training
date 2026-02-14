@@ -9,6 +9,15 @@ $message = '';
 $error = '';
 $edit_mode = false;
 $edit_product = null;
+
+// Handle edit via GET first, before calculating show_form
+if (isset($_GET['edit'])) {
+    $edit_product = $product_obj->getById($_GET['edit']);
+    if ($edit_product) {
+        $edit_mode = true;
+    }
+}
+
 $show_form = isset($_GET['show_form']) ? $_GET['show_form'] : ($edit_mode ? true : false);
 
 // Handle form submissions
@@ -66,14 +75,6 @@ if (isset($_GET['delete'])) {
         $products = $product_obj->getAll(); // Refresh list
     } else {
         $error = $result['message'];
-    }
-}
-
-// Handle edit via GET
-if (isset($_GET['edit'])) {
-    $edit_product = $product_obj->getById($_GET['edit']);
-    if ($edit_product) {
-        $edit_mode = true;
     }
 }
 
@@ -206,7 +207,7 @@ function extractFeatures($features_json) {
                                 <div class="product-card-price">Rs. <?php echo htmlspecialchars(number_format($prod['price'] ?? 0, 2)); ?></div>
                                 <div class="product-card-actions">
                                     <button class="btn btn-info btn-sm" onclick="showDetails(<?php echo htmlspecialchars(json_encode($prod)); ?>)">View</button>
-                                    <a href="?edit=<?php echo $prod['product_id']; ?>" class="btn btn-warning btn-sm">Edit</a>
+                                    <a href="?edit=<?php echo $prod['product_id']; ?>&show_form=1" class="btn btn-warning btn-sm">Edit</a>
                                     <a href="?delete=<?php echo $prod['product_id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Delete this product?')">Delete</a>
                                 </div>
                             </div>
@@ -286,7 +287,7 @@ function extractFeatures($features_json) {
             }
 
             html += '<div class="detail-section" style="margin-top: 20px; display: flex; gap: 10px;">';
-            html += '<a href="?edit=' + product.product_id + '" class="btn btn-warning" style="flex:1;text-align:center;">Edit</a>';
+            html += '<a href="?edit=' + product.product_id + '&show_form=1" class="btn btn-warning" style="flex:1;text-align:center;">Edit</a>';
             html += '<a href="?delete=' + product.product_id + '" class="btn btn-danger" style="flex:1;text-align:center;" onclick="return confirm(\'Delete this product?\')">Delete</a>';
             html += '</div>';
 
