@@ -7,18 +7,6 @@ $products = $product_obj->getAll();
 
 $message = '';
 $error = '';
-$edit_mode = false;
-$edit_product = null;
-
-// Handle edit via GET first, before calculating show_form
-if (isset($_GET['edit'])) {
-    $edit_product = $product_obj->getById($_GET['edit']);
-    if ($edit_product) {
-        $edit_mode = true;
-    }
-}
-
-$show_form = isset($_GET['show_form']) ? $_GET['show_form'] : ($edit_mode ? true : false);
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -58,7 +46,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($result['success']) {
             $message = "Product updated successfully!";
             $_POST = []; // Clear form
-            $edit_mode = false;
             $products = $product_obj->getAll(); // Refresh list
         } else {
             $error = $result['message'];
@@ -106,7 +93,6 @@ function extractFeatures($features_json) {
     <div class="container">
         <header>
             <h1>📦 Products Management</h1>
-            <button class="btn btn-primary" onclick="toggleForm()" id="addProductBtn">➕ Add New Product</button>
         </header>
 
         <?php if ($message): ?>
@@ -124,65 +110,77 @@ function extractFeatures($features_json) {
         <?php endif; ?>
 
         <div class="dashboard">
-            <!-- Form Section - Toggleable -->
-            <div class="section form-section" id="formSection" style="<?php echo $show_form ? '' : 'display: none;'; ?>">
-                <h2><?php echo $edit_mode ? '✏️ Edit Product' : '➕ Add Product'; ?></h2>
+            <!-- Add Product Form - Always Visible -->
+            <div class="section form-section" style="display: block;">
+                <h2>➕ Add Product</h2>
 
-                <form method="POST" class="form">
-                    <input type="hidden" name="action" value="<?php echo $edit_mode ? 'update' : 'create'; ?>">
-                    <?php if ($edit_mode): ?>
-                        <input type="hidden" name="product_id" value="<?php echo htmlspecialchars($edit_product['product_id']); ?>">
-                    <?php endif; ?>
+                <form method="POST" class="form" id="addProductForm">
+                    <input type="hidden" name="action" value="create">
 
                     <div class="form-group">
                         <label for="product_name">Product Name *</label>
-                        <input type="text" id="product_name" name="product_name" value="<?php echo htmlspecialchars($_POST['product_name'] ?? ($edit_product['product_name'] ?? '')); ?>" required>
+                        <input type="text" id="product_name" name="product_name" placeholder="Enter product name" required>
                     </div>
 
                     <div class="form-group">
                         <label for="product_type">Category</label>
-                        <input type="text" id="product_type" name="product_type" placeholder="e.g., Bag, Cosmetics, Accessories" value="<?php echo htmlspecialchars($_POST['product_type'] ?? ($edit_product['product_type'] ?? '')); ?>">
+                        <input type="text" id="product_type" name="product_type" placeholder="e.g., Bag, Cosmetics, Accessories">
                     </div>
 
                     <div class="form-group">
                         <label for="brand">Brand</label>
-                        <input type="text" id="brand" name="brand" placeholder="e.g., Nike, Adidas" value="<?php echo htmlspecialchars($_POST['brand'] ?? ($edit_product['brand'] ?? '')); ?>">
+                        <input type="text" id="brand" name="brand" placeholder="e.g., Nike, Adidas">
                     </div>
 
                     <div class="form-group">
                         <label for="material">Material</label>
-                        <input type="text" id="material" name="material" placeholder="e.g., Cotton, Leather, Plastic" value="<?php echo htmlspecialchars($_POST['material'] ?? ($edit_product['material'] ?? '')); ?>">
+                        <input type="text" id="material" name="material" placeholder="e.g., Cotton, Leather, Plastic">
                     </div>
 
                     <div class="form-group">
                         <label for="price">Price (Rs.) *</label>
-                        <input type="number" id="price" name="price" step="0.01" placeholder="Enter price" value="<?php echo htmlspecialchars($_POST['price'] ?? ($edit_product['price'] ?? '')); ?>" required>
+                        <input type="number" id="price" name="price" step="0.01" placeholder="Enter price" required>
                     </div>
 
                     <div class="form-group">
                         <label for="colors">Available Colors</label>
-                        <input type="text" id="colors" name="colors" placeholder="e.g., Red, Blue, Black (comma separated)" value="<?php echo htmlspecialchars($_POST['colors'] ?? extractColors($edit_product['variants'] ?? '{}')); ?>">
+                        <input type="text" id="colors" name="colors" placeholder="e.g., Red, Blue, Black (comma separated)">
                     </div>
 
                     <div class="form-group">
                         <label for="features_list">Features (one per line)</label>
-                        <textarea id="features_list" name="features_list" rows="3" placeholder="Waterproof&#10;Lightweight&#10;Durable"><?php echo htmlspecialchars($_POST['features_list'] ?? extractFeatures($edit_product['features'] ?? '[]')); ?></textarea>
+                        <textarea id="features_list" name="features_list" rows="3" placeholder="Waterproof&#10;Lightweight&#10;Durable"></textarea>
                     </div>
 
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary" style="flex:1;">
-                            <?php echo $edit_mode ? 'Update Product' : 'Add Product'; ?>
+                            Add Product
                         </button>
-                        <button type="button" class="btn btn-secondary" onclick="closeForm()" style="flex:1;">
-                            <?php echo $edit_mode ? 'Cancel Edit' : 'Cancel'; ?>
+                        <button type="reset" class="btn btn-secondary" style="flex:1;">
+                            Clear
                         </button>
                     </div>
                 </form>
             </div>
 
-            <!-- Products Section - Main Focus -->
+            <!-- Products Section -->
             <div class="section products-section">
-                <h2>📋 All Products (<?php echo count($products); ?>)</h2>
+                <div class="products-header">
+                    <h2>📋 All Products (<span id="productCount"><?php echo count($products); ?></span>)</h2>
+                    <div class="search-sort-controls">
+                        <div class="search-box">
+                            <input type="text" id="searchInput" placeholder="Search products by name or category..." />
+                            <button class="btn btn-primary btn-sm" onclick="searchProducts()">🔍 Search</button>
+                        </div>
+                        <select id="sortSelect" class="sort-select" onchange="sortProducts()">
+                            <option value="">Sort By...</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="price-asc">Price (Low to High)</option>
+                            <option value="price-desc">Price (High to Low)</option>
+                        </select>
+                    </div>
+                </div>
 
                 <?php if (empty($products)): ?>
                     <div class="no-data-message">
@@ -207,7 +205,7 @@ function extractFeatures($features_json) {
                                 <div class="product-card-price">Rs. <?php echo htmlspecialchars(number_format($prod['price'] ?? 0, 2)); ?></div>
                                 <div class="product-card-actions">
                                     <button class="btn btn-info btn-sm" onclick="showDetails(<?php echo htmlspecialchars(json_encode($prod)); ?>)">View</button>
-                                    <a href="?edit=<?php echo $prod['product_id']; ?>&show_form=1" class="btn btn-warning btn-sm">Edit</a>
+                                    <button class="btn btn-warning btn-sm" onclick="openEditModal(<?php echo htmlspecialchars(json_encode($prod)); ?>)">Edit</button>
                                     <a href="?delete=<?php echo $prod['product_id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Delete this product?')">Delete</a>
                                 </div>
                             </div>
@@ -229,30 +227,169 @@ function extractFeatures($features_json) {
         </div>
     </div>
 
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✏️ Edit Product</h2>
+                <button class="close-btn" onclick="closeModal('editModal')">×</button>
+            </div>
+            <form method="POST" class="form" id="editProductForm">
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" name="product_id" id="editProductId">
+
+                <div class="form-group">
+                    <label for="edit_product_name">Product Name *</label>
+                    <input type="text" id="edit_product_name" name="product_name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit_product_type">Category</label>
+                    <input type="text" id="edit_product_type" name="product_type">
+                </div>
+
+                <div class="form-group">
+                    <label for="edit_brand">Brand</label>
+                    <input type="text" id="edit_brand" name="brand">
+                </div>
+
+                <div class="form-group">
+                    <label for="edit_material">Material</label>
+                    <input type="text" id="edit_material" name="material">
+                </div>
+
+                <div class="form-group">
+                    <label for="edit_price">Price (Rs.) *</label>
+                    <input type="number" id="edit_price" name="price" step="0.01" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit_colors">Available Colors</label>
+                    <input type="text" id="edit_colors" name="colors">
+                </div>
+
+                <div class="form-group">
+                    <label for="edit_features_list">Features (one per line)</label>
+                    <textarea id="edit_features_list" name="features_list" rows="3"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" style="flex:1;">
+                        Update Product
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editModal')" style="flex:1;">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/algorithms.js"></script>
     <script>
-        function toggleForm() {
-            const formSection = document.getElementById('formSection');
-            const addBtn = document.getElementById('addProductBtn');
+        // Store original products data
+        let allProducts = <?php echo json_encode($products); ?>;
+
+        // Search products using KMP
+        function searchProducts() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
             
-            if (formSection.style.display === 'none') {
-                formSection.style.display = 'block';
-                addBtn.textContent = '✖ Close Form';
-                addBtn.classList.add('active');
-                document.getElementById('product_name').focus();
-            } else {
-                formSection.style.display = 'none';
-                addBtn.textContent = '➕ Add New Product';
-                addBtn.classList.remove('active');
+            if (!query) {
+                displayProducts(allProducts);
+                return;
             }
+
+            const filtered = allProducts.filter(product => {
+                const name = (product.product_name || '').toLowerCase();
+                const category = (product.product_type || '').toLowerCase();
+                const brand = (product.brand || '').toLowerCase();
+                
+                return kmpSearch(name, query) || 
+                       kmpSearch(category, query) || 
+                       kmpSearch(brand, query);
+            });
+
+            displayProducts(filtered);
         }
 
-        function closeForm() {
-            const formSection = document.getElementById('formSection');
-            const addBtn = document.getElementById('addProductBtn');
+        // Sort products using Merge Sort
+        function sortProducts() {
+            const sortValue = document.getElementById('sortSelect').value;
             
-            formSection.style.display = 'none';
-            addBtn.textContent = '➕ Add New Product';
-            addBtn.classList.remove('active');
+            if (!sortValue) {
+                displayProducts(allProducts);
+                return;
+            }
+
+            let compareFn;
+
+            if (sortValue === 'name-asc') {
+                compareFn = (a, b) => (a.product_name || '').localeCompare(b.product_name || '');
+            } else if (sortValue === 'name-desc') {
+                compareFn = (a, b) => (b.product_name || '').localeCompare(a.product_name || '');
+            } else if (sortValue === 'price-asc') {
+                compareFn = (a, b) => parseFloat(a.price || 0) - parseFloat(b.price || 0);
+            } else if (sortValue === 'price-desc') {
+                compareFn = (a, b) => parseFloat(b.price || 0) - parseFloat(a.price || 0);
+            }
+
+            const sorted = mergeSort([...allProducts], compareFn);
+            displayProducts(sorted);
+        }
+
+        // Display products on page
+        function displayProducts(products) {
+            const container = document.querySelector('.product-grid');
+            document.getElementById('productCount').textContent = products.length;
+
+            if (products.length === 0) {
+                container.innerHTML = '<div class="no-data-message" style="grid-column: 1/-1;"><p>No products found.</p></div>';
+                return;
+            }
+
+            container.innerHTML = products.map(prod => `
+                <div class="product-card">
+                    <div class="product-card-title">${escapeHtml(prod.product_name)}</div>
+                    <div class="product-card-meta">
+                        ${prod.brand ? `<strong>${escapeHtml(prod.brand)}</strong><br>` : ''}
+                        ${prod.product_type ? `Category: ${escapeHtml(prod.product_type)}<br>` : ''}
+                        ${prod.material ? `Material: ${escapeHtml(prod.material)}` : ''}
+                    </div>
+                    <div class="product-card-price">Rs. ${parseFloat(prod.price || 0).toFixed(2)}</div>
+                    <div class="product-card-actions">
+                        <button class="btn btn-info btn-sm" onclick='showDetails(${JSON.stringify(prod)})'>View</button>
+                        <button class="btn btn-warning btn-sm" onclick='openEditModal(${JSON.stringify(prod)})'>Edit</button>
+                        <a href="?delete=${prod.product_id}" class="btn btn-danger btn-sm" onclick="return confirm('Delete this product?')">Delete</a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Allow Enter key in search
+        document.getElementById('searchInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                searchProducts();
+            }
+        });
+
+        function openEditModal(product) {
+            document.getElementById('editProductId').value = product.product_id;
+            document.getElementById('edit_product_name').value = product.product_name || '';
+            document.getElementById('edit_product_type').value = product.product_type || '';
+            document.getElementById('edit_brand').value = product.brand || '';
+            document.getElementById('edit_material').value = product.material || '';
+            document.getElementById('edit_price').value = product.price || '';
+            
+            // Extract colors from variants JSON
+            const variants = JSON.parse(product.variants || '{}');
+            document.getElementById('edit_colors').value = (variants.colors && variants.colors.length > 0) ? variants.colors.join(', ') : '';
+            
+            // Extract features from JSON
+            const features = JSON.parse(product.features || '[]');
+            document.getElementById('edit_features_list').value = (features.length > 0) ? features.join('\n') : '';
+            
+            const modal = document.getElementById('editModal');
+            modal.classList.add('active');
         }
 
         function showDetails(product) {
@@ -287,7 +424,7 @@ function extractFeatures($features_json) {
             }
 
             html += '<div class="detail-section" style="margin-top: 20px; display: flex; gap: 10px;">';
-            html += '<a href="?edit=' + product.product_id + '&show_form=1" class="btn btn-warning" style="flex:1;text-align:center;">Edit</a>';
+            html += '<button class="btn btn-warning" style="flex:1;" onclick="closeModal(\'detailsModal\'); openEditModal(' + JSON.stringify(product).split("'").join("&#39;") + ')">Edit</button>';
             html += '<a href="?delete=' + product.product_id + '" class="btn btn-danger" style="flex:1;text-align:center;" onclick="return confirm(\'Delete this product?\')">Delete</a>';
             html += '</div>';
 
@@ -300,9 +437,13 @@ function extractFeatures($features_json) {
         }
 
         window.onclick = function(event) {
-            const modal = document.getElementById('detailsModal');
-            if (event.target === modal) {
-                modal.classList.remove('active');
+            const detailsModal = document.getElementById('detailsModal');
+            const editModal = document.getElementById('editModal');
+            if (event.target === detailsModal) {
+                detailsModal.classList.remove('active');
+            }
+            if (event.target === editModal) {
+                editModal.classList.remove('active');
             }
         };
     </script>
