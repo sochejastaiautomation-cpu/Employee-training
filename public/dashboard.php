@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'brand' => $_POST['brand'] ?? '',
         'material' => $_POST['material'] ?? '',
         'price' => $_POST['price'] ?? 0,
-        'delivery' => json_encode(['standard' => true]),
+        'general_info' => $_POST['general_info'] ?? '',
         'variants' => json_encode(['colors' => $colors]),
         'features' => json_encode($features),
         'faqs' => json_encode([])
@@ -152,6 +152,16 @@ function extractFeatures($features_json) {
                         <textarea id="features_list" name="features_list" rows="3" placeholder="Waterproof&#10;Lightweight&#10;Durable"></textarea>
                     </div>
 
+                    <!-- General Info Section -->
+                    <div style="border-top: 2px solid #ddd; padding-top: 20px; margin-top: 20px;">
+                        <h3 style="margin-top: 0; color: #333;">ℹ️ General Information</h3>
+                        
+                        <div class="form-group">
+                            <label for="general_info">Delivery & Payment Information</label>
+                            <textarea id="general_info" name="general_info" rows="5" placeholder="Inside Kathmandu Valley Delivery Charge: Rs. 100/-&#10;Outside Kathmandu Valley Delivery Charge: Rs. 150/-&#10;Cash on delivery&#10;Payment can be done to Delivery Rider&#10;Office Phone Number: 9802377999&#10;Office Location: Kalanki NBTC"></textarea>
+                        </div>
+                    </div>
+
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary" style="flex:1;">
                             Add Product
@@ -273,6 +283,16 @@ function extractFeatures($features_json) {
                     <textarea id="edit_features_list" name="features_list" rows="3"></textarea>
                 </div>
 
+                <!-- General Info Section -->
+                <div style="border-top: 2px solid #ddd; padding-top: 20px; margin-top: 20px;">
+                    <h3 style="margin-top: 0; color: #333;">ℹ️ General Information</h3>
+                    
+                    <div class="form-group">
+                        <label for="edit_general_info">Delivery & Payment Information</label>
+                        <textarea id="edit_general_info" name="general_info" rows="5"></textarea>
+                    </div>
+                </div>
+
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary" style="flex:1;">
                         Update Product
@@ -388,6 +408,9 @@ function extractFeatures($features_json) {
             const features = JSON.parse(product.features || '[]');
             document.getElementById('edit_features_list').value = (features.length > 0) ? features.join('\n') : '';
             
+            // Set general info
+            document.getElementById('edit_general_info').value = product.general_info || '';
+            
             const modal = document.getElementById('editModal');
             modal.classList.add('active');
         }
@@ -422,7 +445,9 @@ function extractFeatures($features_json) {
                 });
                 html += '</ul></div></div>';
             }
-
+            if (product.general_info) {
+                html += '<div class="detail-section"><strong>General Information:</strong><div style="white-space: pre-wrap; background: #f5f5f5; padding: 10px; border-radius: 4px;">' + product.general_info + '</div></div>';
+            }
             html += '<div class="detail-section" style="margin-top: 20px; display: flex; gap: 10px;">';
             html += '<button class="btn btn-warning" style="flex:1;" onclick="closeModal(\'detailsModal\'); openEditModal(' + JSON.stringify(product).split("'").join("&#39;") + ')">Edit</button>';
             html += '<a href="?delete=' + product.product_id + '" class="btn btn-danger" style="flex:1;text-align:center;" onclick="return confirm(\'Delete this product?\')">Delete</a>';

@@ -29,7 +29,7 @@ class Product {
     // Create product
     public function create($data) {
         $query = "INSERT INTO " . $this->table . " 
-                  (product_name, product_type, brand, material, price, delivery, variants, features, faqs) 
+                  (product_name, product_type, brand, material, price, general_info, variants, features, faqs) 
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $this->conn->prepare($query);
@@ -39,13 +39,13 @@ class Product {
         }
         
         $stmt->bind_param(
-            "ssssdssss",
+            "ssssdsss",
             $data['product_name'],
             $data['product_type'],
             $data['brand'],
             $data['material'],
             $data['price'],
-            $data['delivery'],
+            $data['general_info'],
             $data['variants'],
             $data['features'],
             $data['faqs']
@@ -62,7 +62,7 @@ class Product {
     public function update($id, $data) {
         $query = "UPDATE " . $this->table . " 
                   SET product_name = ?, product_type = ?, brand = ?, material = ?, 
-                      price = ?, delivery = ?, variants = ?, features = ?, faqs = ? 
+                      price = ?, general_info = ?, variants = ?, features = ?, faqs = ? 
                   WHERE product_id = ?";
         
         $stmt = $this->conn->prepare($query);
@@ -78,7 +78,7 @@ class Product {
             $data['brand'],
             $data['material'],
             $data['price'],
-            $data['delivery'],
+            $data['general_info'],
             $data['variants'],
             $data['features'],
             $data['faqs'],
