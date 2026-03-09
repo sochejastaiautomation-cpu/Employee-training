@@ -19,6 +19,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $features = !empty($_POST['features_list']) ? explode('\n', $_POST['features_list']) : [];
     $features = array_map('trim', array_filter($features));
 
+    // Handle photo links
+    $photos = !empty($_POST['photo_link']) ? explode('\n', $_POST['photo_link']) : [];
+    $photos = array_map('trim', array_filter($photos));
+
+    // Handle video links
+    $videos = !empty($_POST['video_link']) ? explode('\n', $_POST['video_link']) : [];
+    $videos = array_map('trim', array_filter($videos));
+
     $data = [
         'product_name' => $_POST['product_name'] ?? '',
         'product_type' => $_POST['product_type'] ?? '',
@@ -28,7 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'general_info' => $_POST['general_info'] ?? '',
         'variants' => json_encode(['colors' => $colors]),
         'features' => json_encode($features),
-        'faqs' => json_encode([])
+        'faqs' => json_encode([]),
+        'photo_link' => json_encode($photos),
+        'video_link' => json_encode($videos)
     ];
 
     if ($action === 'create') {
@@ -75,6 +85,22 @@ function extractColors($variants_json) {
 
 function extractFeatures($features_json) {
     $data = json_decode($features_json, true);
+    if (is_array($data)) {
+        return implode("\n", $data);
+    }
+    return '';
+}
+
+function extractPhotos($photo_link_json) {
+    $data = json_decode($photo_link_json, true);
+    if (is_array($data)) {
+        return implode("\n", $data);
+    }
+    return '';
+}
+
+function extractVideos($video_link_json) {
+    $data = json_decode($video_link_json, true);
     if (is_array($data)) {
         return implode("\n", $data);
     }
@@ -150,6 +176,21 @@ function extractFeatures($features_json) {
                     <div class="form-group">
                         <label for="features_list">Features (one per line)</label>
                         <textarea id="features_list" name="features_list" rows="3" placeholder="Waterproof&#10;Lightweight&#10;Durable"></textarea>
+                    </div>
+
+                    <!-- Media Links Section -->
+                    <div style="border-top: 2px solid #ddd; padding-top: 20px; margin-top: 20px;">
+                        <h3 style="margin-top: 0; color: #333;">📷 Photo & Video Links</h3>
+                        
+                        <div class="form-group">
+                            <label for="photo_link">Photo Links (one per line)</label>
+                            <textarea id="photo_link" name="photo_link" rows="3" placeholder="https://example.com/photo1.jpg&#10;https://example.com/photo2.jpg&#10;https://example.com/photo3.jpg"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="video_link">Video Links (one per line)</label>
+                            <textarea id="video_link" name="video_link" rows="3" placeholder="https://youtube.com/watch?v=xxx&#10;https://vimeo.com/xxx&#10;https://example.com/video.mp4"></textarea>
+                        </div>
                     </div>
 
                     <!-- General Info Section -->
@@ -283,6 +324,21 @@ function extractFeatures($features_json) {
                     <textarea id="edit_features_list" name="features_list" rows="3"></textarea>
                 </div>
 
+                <!-- Media Links Section -->
+                <div style="border-top: 2px solid #ddd; padding-top: 20px; margin-top: 20px;">
+                    <h3 style="margin-top: 0; color: #333;">📷 Photo & Video Links</h3>
+                    
+                    <div class="form-group">
+                        <label for="edit_photo_link">Photo Links (one per line)</label>
+                        <textarea id="edit_photo_link" name="photo_link" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_video_link">Video Links (one per line)</label>
+                        <textarea id="edit_video_link" name="video_link" rows="3"></textarea>
+                    </div>
+                </div>
+
                 <!-- General Info Section -->
                 <div style="border-top: 2px solid #ddd; padding-top: 20px; margin-top: 20px;">
                     <h3 style="margin-top: 0; color: #333;">ℹ️ General Information</h3>
@@ -408,6 +464,14 @@ function extractFeatures($features_json) {
             const features = JSON.parse(product.features || '[]');
             document.getElementById('edit_features_list').value = (features.length > 0) ? features.join('\n') : '';
             
+            // Extract photos from JSON
+            const photos = JSON.parse(product.photo_link || '[]');
+            document.getElementById('edit_photo_link').value = (photos.length > 0) ? photos.join('\n') : '';
+            
+            // Extract videos from JSON
+            const videos = JSON.parse(product.video_link || '[]');
+            document.getElementById('edit_video_link').value = (videos.length > 0) ? videos.join('\n') : '';
+            
             // Set general info
             document.getElementById('edit_general_info').value = product.general_info || '';
             
@@ -445,6 +509,25 @@ function extractFeatures($features_json) {
                 });
                 html += '</ul></div></div>';
             }
+
+            const photos = JSON.parse(product.photo_link || '[]');
+            if (photos.length > 0) {
+                html += '<div class="detail-section"><strong>📷 Photo Links:</strong><div class="detail-list"><ul>';
+                photos.forEach(photo => {
+                    html += '<li><a href="' + photo + '" target="_blank" style="color: #0066cc; text-decoration: none;">' + photo + ' 🔗</a></li>';
+                });
+                html += '</ul></div></div>';
+            }
+
+            const videos = JSON.parse(product.video_link || '[]');
+            if (videos.length > 0) {
+                html += '<div class="detail-section"><strong>🎬 Video Links:</strong><div class="detail-list"><ul>';
+                videos.forEach(video => {
+                    html += '<li><a href="' + video + '" target="_blank" style="color: #0066cc; text-decoration: none;">' + video + ' 🔗</a></li>';
+                });
+                html += '</ul></div></div>';
+            }
+
             if (product.general_info) {
                 html += '<div class="detail-section"><strong>General Information:</strong><div style="white-space: pre-wrap; background: #f5f5f5; padding: 10px; border-radius: 4px;">' + product.general_info + '</div></div>';
             }

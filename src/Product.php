@@ -29,8 +29,8 @@ class Product {
     // Create product
     public function create($data) {
         $query = "INSERT INTO " . $this->table . " 
-                  (product_name, product_type, brand, material, price, general_info, variants, features, faqs) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                  (product_name, product_type, brand, material, price, general_info, variants, features, faqs, photo_link, video_link) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $this->conn->prepare($query);
         
@@ -39,7 +39,7 @@ class Product {
         }
         
         $stmt->bind_param(
-            "ssssdsss",
+            "ssssdssss",
             $data['product_name'],
             $data['product_type'],
             $data['brand'],
@@ -48,7 +48,9 @@ class Product {
             $data['general_info'],
             $data['variants'],
             $data['features'],
-            $data['faqs']
+            $data['faqs'],
+            $data['photo_link'],
+            $data['video_link']
         );
         
         if ($stmt->execute()) {
@@ -62,7 +64,7 @@ class Product {
     public function update($id, $data) {
         $query = "UPDATE " . $this->table . " 
                   SET product_name = ?, product_type = ?, brand = ?, material = ?, 
-                      price = ?, general_info = ?, variants = ?, features = ?, faqs = ? 
+                      price = ?, general_info = ?, variants = ?, features = ?, faqs = ?, photo_link = ?, video_link = ? 
                   WHERE product_id = ?";
         
         $stmt = $this->conn->prepare($query);
@@ -72,7 +74,7 @@ class Product {
         }
         
         $stmt->bind_param(
-            "ssssdssssi",
+            "ssssdsssssi",
             $data['product_name'],
             $data['product_type'],
             $data['brand'],
@@ -82,6 +84,8 @@ class Product {
             $data['variants'],
             $data['features'],
             $data['faqs'],
+            $data['photo_link'],
+            $data['video_link'],
             $id
         );
         
