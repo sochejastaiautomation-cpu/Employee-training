@@ -1,12 +1,20 @@
 <?php
+session_start();
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../src/Product.php';
 
 $product_obj = new Product($conn);
 $products = $product_obj->getAll();
 
-$message = '';
-$error = '';
+// Check for session messages
+$message = $_SESSION['message'] ?? '';
+$error = $_SESSION['error'] ?? '';
+$import_errors = $_SESSION['import_errors'] ?? '';
+
+// Clear session messages after displaying
+unset($_SESSION['message']);
+unset($_SESSION['error']);
+unset($_SESSION['import_errors']);
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -135,6 +143,14 @@ function extractVideos($video_link_json) {
             </div>
         <?php endif; ?>
 
+        <?php if ($import_errors): ?>
+            <div class="alert alert-warning" style="background-color: #fff3cd; border-color: #ffc107; color: #856404;">
+                ⚠️ Import completed with some issues:<br>
+                <pre style="white-space: pre-wrap; word-wrap: break-word; margin: 10px 0 0 0; font-size: 12px;"><?php echo htmlspecialchars($import_errors); ?></pre>
+                <button onclick="this.parentElement.style.display='none'" style="background:none;border:none;color:inherit;cursor:pointer;font-size:18px;float:right;margin-top:-40px;">×</button>
+            </div>
+        <?php endif; ?>
+
         <div class="dashboard">
             <!-- Add Product Form - Always Visible -->
             <div class="section form-section" style="display: block;">
@@ -218,6 +234,27 @@ function extractVideos($video_link_json) {
             <div class="section products-section">
                 <div class="products-header">
                     <h2>📋 All Products (<span id="productCount"><?php echo count($products); ?></span>)</h2>
+                    <div class="import-export-controls" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <a href="import_export.php?action=download_sample" class="btn btn-info btn-sm" style="display: flex; align-items: center; gap: 5px;">
+                            📥 Download Sample
+                        </a>
+                        <button class="btn btn-success btn-sm" onclick="toggleUploadForm()" style="display: flex; align-items: center; gap: 5px;">
+                            📤 Upload Products
+                        </button>
+                    </div>
+                    <div id="uploadForm" class="upload-form" style="display: none; background: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 15px; border: 2px solid #4CAF50;">
+                        <form method="POST" action="import_export.php" enctype="multipart/form-data">
+                            <input type="hidden" name="action" value="upload_products">
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <input type="file" name="csv_file" accept=".csv,.xlsx" required style="flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+                                <button type="submit" class="btn btn-success">Upload & Import</button>
+                                <button type="button" class="btn btn-secondary" onclick="toggleUploadForm()">Cancel</button>
+                            </div>
+                            <small style="display: block; margin-top: 8px; color: #666;">
+                                📝 Upload a CSV or Excel file. Download the sample template first to see the correct format.
+                            </small>
+                        </form>
+                    </div>
                     <div class="search-sort-controls">
                         <div class="search-box">
                             <input type="text" id="searchInput" placeholder="Search products by name or category..." />
@@ -365,6 +402,16 @@ function extractVideos($video_link_json) {
     <script>
         // Store original products data
         let allProducts = <?php echo json_encode($products); ?>;
+
+        // Toggle upload form visibility
+        function toggleUploadForm() {
+            const form = document.getElementById('uploadForm');
+            if (form.style.display === 'none') {
+                form.style.display = 'block';
+            } else {
+                form.style.display = 'none';
+            }
+        }
 
         // Search products using KMP
         function searchProducts() {

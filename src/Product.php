@@ -11,7 +11,7 @@ class Product {
 
     // Get all products
     public function getAll() {
-        $query = "SELECT * FROM " . $this->table . " ORDER BY created_at DESC";
+        $query = "SELECT * FROM " . $this->table;
         $result = $this->conn->query($query);
         return $result->fetch_all(MYSQLI_ASSOC);
     }
@@ -39,7 +39,7 @@ class Product {
         }
         
         $stmt->bind_param(
-            "ssssdssss",
+            "ssssdssssss",
             $data['product_name'],
             $data['product_type'],
             $data['brand'],
